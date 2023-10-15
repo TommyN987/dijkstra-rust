@@ -1,9 +1,8 @@
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::fmt::Display;
-use std::hash::Hash;
 
-#[derive(Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Debug)]
 struct Node<T> {
     value: T,
 }
@@ -21,30 +20,32 @@ struct Graph<T> {
 }
 
 // `Current` represents the current node and the cost to reach it.
-#[derive(Debug, Eq, PartialEq)]
 struct Current<T> {
     cost: u32,
     node: T,
 }
 
-// Implementing `Ord` to make `Current` sortable in the `BinaryHeap`.
-// We want a min-heap, so we reverse the order of costs.
-impl<T> Ord for Current<T>
-where
-    T: Ord,
-{
-    fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .cost
-            .cmp(&self.cost)
-            .then_with(|| self.node.cmp(&other.node))
+// Implement PartialEq, comparing only the `cost`.
+impl<T> PartialEq for Current<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.cost == other.cost
     }
 }
 
-impl<T> PartialOrd for Current<T>
-where
-    T: Ord,
-{
+// Implement Eq since PartialEq is implemented. We can leave it empty because
+// Eq is a marker trait that doesn't require any methods.
+impl<T> Eq for Current<T> {}
+
+// Implement Ord, considering only the `cost`.
+// We reverse the order of costs to turn the BinaryHeap into a min-heap.
+impl<T> Ord for Current<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.cost.cmp(&self.cost)
+    }
+}
+
+// Implement PartialOrd. It must be consistent with Ord.
+impl<T> PartialOrd for Current<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
@@ -52,7 +53,7 @@ where
 
 fn dijkstra<T>(graph: &Graph<T>, start: usize, end: usize) -> Option<(VecDeque<usize>, u32)>
 where
-    T: Hash + Eq + Ord + Display,
+    T: Display,
 {
     let mut dist: HashMap<usize, u32> = HashMap::new();
     let mut heap: BinaryHeap<Current<usize>> = BinaryHeap::new();
